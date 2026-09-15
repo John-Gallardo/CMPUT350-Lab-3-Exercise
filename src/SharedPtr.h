@@ -48,7 +48,13 @@ private:
 template <typename T>
 class ControlBlock : public ControlBlockBase {
 public:
+    // constructor
     ControlBlock(T *ptr): m_storedPtr{ptr} {}
+
+    // destructor
+    ~ControlBlock() override {
+        delete m_storedPtr;
+    }
 
     void *managedAddress() {
         // NOTE: not sure if the explicit cast is needed
@@ -78,7 +84,9 @@ public:
     // copy semantics
     // copy constructor
     SharedPtr(const SharedPtr<T> &sharedPtr): m_storedPtr{sharedPtr.m_storedPtr}, m_controlBlock{sharedPtr.m_controlBlock} {
-        m_controlBlock->increment();
+        if (m_controlBlock) {
+            m_controlBlock->increment();
+        }
     }
 
     // copy assignment
@@ -93,12 +101,22 @@ public:
 
     // move semantics
     // move constructor
-    // TODO: 
     SharedPtr(SharedPtr<T> &&sharedPtr): m_storedPtr{sharedPtr.m_storedPtr}, m_controlBlock{sharedPtr.m_controlBlock} {
+        sharedPtr.m_storedPtr = nullptr;
+        sharedPtr.m_controlBlock = nullptr;
     }
 
     // move assignment
-    // TODO:
+    SharedPtr<T> &operator=(SharedPtr<T> &&sharedPtr) {
+        m_storedPtr = sharedPtr.m_storedPtr;
+        if (m_controlBlock) {
+            m_controlBlock->decrement();
+        }
+        m_controlBlock = sharedPtr.m_controlBlock;
+
+        sharedPtr.m_storedPtr = nullptr;
+        sharedPtr.m_controlBlock = nullptr;
+    }
 
     // 'dereference' operators
     T& operator*() {
@@ -157,14 +175,19 @@ public:
     }
 
     long useCount() {
-        return m_controlBlock.refCount();
+        return m_controlBlock->refCount();
     }
 
 private:
     // our two raw pointers: 1. control block, 2. stored pointer
-    ControlBlock<T> *m_controlBlock;
+    ControlBlockBase *m_controlBlock;
     T *m_storedPtr;
 };
 
+template <typename T, typename... Args>
+SharedPtr<T> makeSharedBasic(Args&&... args) {
+    // NOTE: I assume it's basically identical to prep's makeUnique()?
+    return SharedPtr<T>(new T(std::forward<Args>(args)...));
+}
 
 #endif
