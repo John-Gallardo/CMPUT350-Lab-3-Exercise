@@ -1,5 +1,6 @@
 #ifndef SHARED_PTR_HEADER
 #define SHARED_PTR_HEADER
+#include <cassert>
 
 class ControlBlockBase {
 public:
@@ -7,9 +8,9 @@ public:
     ControlBlockBase(): m_refCount{0} {}
 
     // dtor is virtual, so that we can call derived class's dtor from a ptr to this base class.
-    // TODO: implement the destructor.
+    // implement the destructor.
     virtual ~ControlBlockBase() {
-        
+        assert(m_refCount == 0);
     } 
 
     // pure virtual function; must be overriden by derived classes
@@ -39,19 +40,21 @@ public:
 
 private:
     // add field(s) which both control block types need to have
-    // 1. reference count
-    // NOTE: I am assuming just reference count because there could be 2 versions -> 1 storing ptr, 1 embedding the data directly
-    int m_refCount;
+    long m_refCount;
 };
 
-
+// 1. Version storing the pointer to the object
+template <typename T>
 class ControlBlock : public ControlBlockBase {
 public:
-    void *managedAddress() {
+    ControlBlock(T *ptr): m_storedPtr{ptr} {}
 
+    void *managedAddress() {
+        // NOTE: not sure if the explicit cast is needed
+        return static_cast<void *>(m_storedPtr);
     }
 private:
-
+    T *m_storedPtr;
 };
 
 template <typename T>
@@ -62,7 +65,7 @@ public:
     SharedPtr(): m_controlBlock{nullptr}, m_storedPtr{nullptr} {};
 
     // Case 2: pointer given
-    SharedPtr(T *ptr): m_controlBlock{new ControlBlock()}, m_storedPtr{ptr} {
+    SharedPtr(T *ptr): m_controlBlock{new ControlBlock<T>(ptr)}, m_storedPtr{ptr} {
         m_controlBlock->increment();
     }
 
@@ -72,12 +75,30 @@ public:
     }
 
     // copy semantics
-//    SharedPtr(const SharedPtr<T> &sharedPtr) : m_
+    // copy constructor
+    SharedPtr(const SharedPtr<T> &sharedPtr): m_storedPtr{sharedPtr.m_storedPtr}, m_controlBlock{sharedPtr.m_controlBlock} {
+        m_controlBlock->increment();
+    }
 
+    // copy assignment
+    SharedPtr<T> &operator=(const SharedPtr<T> &sharedPtr) {
+        // NOTE: I assume we need to decrement current control block's count, because it's 1 less thing pointing to it
+        if (m_controlBlock) {
+            m_controlBlock->decrement();
+        }
+        m_controlBlock = sharedPtr.m_controlBlock;
+        m_storedPtr = sharedPtr.m_storedPtr;
+    }
+
+    // move semantics
+    // move constructor
+    SharedPtr(SharedPtr<T> &&sharedPtr): m_storedPtr{sharedPtr.m_storedPtr}, m_controlBlock{sharedPtr.m_controlBlock} {}
+
+    // move assignment
 
 private:
     // our two raw pointers: 1. control block, 2. stored pointer
-    ControlBlock *m_controlBlock;
+    ControlBlock<T> *m_controlBlock;
     T *m_storedPtr;
 };
 
