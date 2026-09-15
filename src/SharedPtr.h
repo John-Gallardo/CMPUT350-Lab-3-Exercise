@@ -1,6 +1,7 @@
 #ifndef SHARED_PTR_HEADER
 #define SHARED_PTR_HEADER
 #include <cassert>
+#include <utility>
 
 class ControlBlockBase {
 public:
@@ -92,9 +93,72 @@ public:
 
     // move semantics
     // move constructor
-    SharedPtr(SharedPtr<T> &&sharedPtr): m_storedPtr{sharedPtr.m_storedPtr}, m_controlBlock{sharedPtr.m_controlBlock} {}
+    // TODO: 
+    SharedPtr(SharedPtr<T> &&sharedPtr): m_storedPtr{sharedPtr.m_storedPtr}, m_controlBlock{sharedPtr.m_controlBlock} {
+    }
 
     // move assignment
+    // TODO:
+
+    // 'dereference' operators
+    T& operator*() {
+        return *m_storedPtr;
+    }
+
+    T* operator->() {
+        return m_storedPtr;
+    }
+
+    T* get() {
+        return m_storedPtr;
+    }
+
+    // equality & boolean conversion operators
+    bool operator==(const SharedPtr<T> &other) {
+        return other.m_storedPtr == m_storedPtr;
+    }
+
+    operator bool() const {
+        return m_storedPtr != nullptr;
+    }
+
+    // shared pointer swap
+    void swap(SharedPtr<T> &other) {
+        // swap pointers & control block pointers.
+        std::swap(other.m_storedPtr, m_storedPtr);
+        std::swap(other.m_controlBlock, m_controlBlock);
+        // NOTE: I believe nothing should get decremented or incremented because the number of pointers remain the same?
+    }
+
+    // reset
+    void reset() {
+        if (m_controlBlock) {
+            m_controlBlock->decrement();
+        }
+        m_controlBlock = nullptr;
+        m_storedPtr = nullptr;
+    }
+
+    // reset override
+    void reset(T* other) {
+        // Edge Case: self-assignment
+        if (other == m_storedPtr) {
+            return;
+        }
+
+        // decrement current control block & create a new shared ptr manually
+        if (m_controlBlock) {
+            m_controlBlock->decrement();
+        }
+
+        m_controlBlock = new ControlBlock(other);
+        m_controlBlock->increment();
+        m_storedPtr = other;
+    }
+
+    long useCount() {
+        return m_controlBlock.refCount();
+    }
 
 private:
     // our two raw pointers: 1. control block, 2. stored pointer
