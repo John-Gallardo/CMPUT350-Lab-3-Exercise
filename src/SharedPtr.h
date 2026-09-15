@@ -69,10 +69,10 @@ class SharedPtr {
 public:
     // constructors
     // Case 1: no arguments
-    SharedPtr(): m_controlBlock{nullptr}, m_storedPtr{nullptr} {};
+    SharedPtr(): m_storedPtr{nullptr}, m_controlBlock{nullptr} {};
 
     // Case 2: pointer given
-    SharedPtr(T *ptr): m_controlBlock{new ControlBlock<T>(ptr)}, m_storedPtr{ptr} {
+    SharedPtr(T *ptr): m_storedPtr{ptr}, m_controlBlock{new ControlBlock<T>(ptr)} {
         m_controlBlock->increment();
     }
 
@@ -98,8 +98,12 @@ public:
         if (m_controlBlock) {
             m_controlBlock->decrement();
         }
+
         m_controlBlock = sharedPtr.m_controlBlock;
+        if (m_controlBlock)
+            m_controlBlock->increment();
         m_storedPtr = sharedPtr.m_storedPtr;
+        return *this;
     }
 
     // move semantics
@@ -186,8 +190,8 @@ public:
 
 private:
     // our two raw pointers: 1. control block, 2. stored pointer
-    ControlBlockBase *m_controlBlock;
     T *m_storedPtr;
+    ControlBlockBase *m_controlBlock;
 };
 
 template <typename T, typename... Args>
