@@ -123,6 +123,7 @@ public:
 
         sharedPtr.m_storedPtr = nullptr;
         sharedPtr.m_controlBlock = nullptr;
+        return *this;
     }
 
     // 'dereference' operators
