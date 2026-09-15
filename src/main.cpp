@@ -24,6 +24,7 @@ int main() {
     assert(uninitialized.useCount() == 3);
 
     // 3. Move semantics test
+
     SharedPtr<int> sharedPtr3{std::move(uninitialized)};
     assert(sharedPtr3.useCount() == 3);
 

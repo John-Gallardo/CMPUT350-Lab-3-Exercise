@@ -2,6 +2,7 @@
 #define SHARED_PTR_HEADER
 #include <cassert>
 #include <utility>
+#include <iostream>
 
 class ControlBlockBase {
 public:
@@ -80,7 +81,10 @@ public:
     ~SharedPtr() {
         if (m_controlBlock) {
             m_controlBlock->decrement();
-            m_controlBlock = nullptr;
+        }
+        // Edge Case: we only delete the control block if no references!
+        if (useCount() == 0) {
+            delete m_controlBlock;
         }
     }
 
@@ -153,7 +157,12 @@ public:
         // swap pointers & control block pointers.
         std::swap(other.m_storedPtr, m_storedPtr);
         std::swap(other.m_controlBlock, m_controlBlock);
-        // NOTE: I believe nothing should get decremented or incremented because the number of pointers remain the same?
+        
+        if (other.m_controlBlock) {
+            m_controlBlock->decrement();
+        }
+        other.m_storedPtr = nullptr;
+        other.m_controlBlock = nullptr;
     }
 
     // reset
