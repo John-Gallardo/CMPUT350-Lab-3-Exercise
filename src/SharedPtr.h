@@ -78,7 +78,10 @@ public:
 
     // destructor
     ~SharedPtr() {
-        m_controlBlock->decrement();
+        if (m_controlBlock) {
+            m_controlBlock->decrement();
+            m_controlBlock = nullptr;
+        }
     }
 
     // copy semantics
@@ -175,7 +178,10 @@ public:
     }
 
     long useCount() {
-        return m_controlBlock->refCount();
+        if (m_controlBlock) {
+            return m_controlBlock->refCount();
+        }
+        return 0;
     }
 
 private:
