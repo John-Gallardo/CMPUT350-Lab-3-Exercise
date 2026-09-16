@@ -23,6 +23,11 @@ int main() {
     uninitialized = sharedPtr2;
     assert(uninitialized.useCount() == 3);
 
+    // test copy assignment memory leak
+    SharedPtr<int> bruh{makeSharedBasic<int>(111)};
+    SharedPtr<int> test{makeSharedBasic<int>(222)};
+    bruh = test;  // valgrind should say no leaks
+
     // 3. Move semantics test
 
     SharedPtr<int> sharedPtr3{std::move(uninitialized)};
@@ -32,6 +37,11 @@ int main() {
     moveAssignment = std::move(sharedPtr3);
     assert(sharedPtr3 == false);
     assert(moveAssignment.useCount() == 3);
+
+    // test move assignment memory leak
+    SharedPtr<float> a{makeSharedBasic<float>(1.5)};
+    SharedPtr<float> b{makeSharedBasic<float>(2.5)};
+    a = std::move(b);  // valgrind should say no leaks
     
     // 4. dereferences operators + .get() test
     SharedPtr<int> sharedPtr4{new int(20)};

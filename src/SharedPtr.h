@@ -102,6 +102,10 @@ public:
         if (m_controlBlock) {
             m_controlBlock->decrement();
         }
+        
+        if (useCount() == 0) {
+            delete m_controlBlock;
+        }
 
         m_controlBlock = sharedPtr.m_controlBlock;
         if (m_controlBlock)
@@ -123,6 +127,11 @@ public:
         if (m_controlBlock) {
             m_controlBlock->decrement();
         }
+        
+        if (useCount() == 0) {
+            delete m_controlBlock;
+        }
+
         m_controlBlock = sharedPtr.m_controlBlock;
 
         sharedPtr.m_storedPtr = nullptr;
@@ -144,7 +153,7 @@ public:
     }
 
     // equality & boolean conversion operators
-    bool operator==(const SharedPtr<T> &other) {
+    bool operator==(const SharedPtr<T> &other) const {
         return other.m_storedPtr == m_storedPtr;
     }
 
@@ -154,15 +163,18 @@ public:
 
     // shared pointer swap
     void swap(SharedPtr<T> &other) {
-        // swap pointers & control block pointers.
-        std::swap(other.m_storedPtr, m_storedPtr);
-        std::swap(other.m_controlBlock, m_controlBlock);
-        
-        if (other.m_controlBlock) {
+        if (m_controlBlock) {
             m_controlBlock->decrement();
         }
-        other.m_storedPtr = nullptr;
-        other.m_controlBlock = nullptr;
+
+        if (useCount() == 0) {
+            delete m_controlBlock;
+        }
+        m_controlBlock = nullptr;
+        m_storedPtr = nullptr;
+
+        std::swap(other.m_storedPtr, m_storedPtr);
+        std::swap(other.m_controlBlock, m_controlBlock);
     }
 
     // reset
@@ -170,6 +182,12 @@ public:
         if (m_controlBlock) {
             m_controlBlock->decrement();
         }
+
+        // edge case: decrementing can make it so that refCount == 0
+        if (useCount() == 0) {
+            delete m_controlBlock;
+        }
+        
         m_controlBlock = nullptr;
         m_storedPtr = nullptr;
     }
@@ -186,12 +204,17 @@ public:
             m_controlBlock->decrement();
         }
 
+        // same edge case as reset() with no parameters
+        if (useCount() == 0) {
+            delete m_controlBlock;
+        }
+
         m_controlBlock = new ControlBlock(other);
         m_controlBlock->increment();
         m_storedPtr = other;
     }
 
-    long useCount() {
+    long useCount() const {
         if (m_controlBlock) {
             return m_controlBlock->refCount();
         }
