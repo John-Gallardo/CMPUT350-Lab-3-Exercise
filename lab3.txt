@@ -3,10 +3,10 @@
 I think the main benefit of doing so is that we don't have to go through another layer of indirection before directly accessing our pointer. This should mean less of a run-time cost (1 dereference vs. 2 dereferences)
 
 2. What is a disadvantage of having the stored pointer (instead of going through the control block)?
-
+I think one disadvantage would be that it feels like 'unnecessary repetition', i.e the cost of dereferencing is pretty minimal so we could have just gotten the pointer through the control block and not have to worry about managing the pointer inside SharedPtr too.
 
 3. From a system design/architecture perspective, what disadvantages are there to using shared pointers?
-
+The biggest disadvantage I can think of is that it could make software architecture more complicated due to the notion of shared ownership that comes with shared pointers. For example, in class, the discussion surrounding on what type of smart pointer to use arguably made the program more complex when all of it could have just been raw pointers with nullptr checks inside the functions.
 
 4. From a performance perspective, what disadvantages there are to using shared pointers (say, versus a unique pointer
    or raw pointer)?
